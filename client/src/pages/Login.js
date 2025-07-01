@@ -1,41 +1,74 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate, Link } from "react-router-dom";
+import { Box, Paper, TextField, Button, Typography, Alert, Link as MuiLink } from '@mui/material';
+import { useNavigate, Link } from 'react-router-dom';
 
-function Login({ onLogin }) {
+function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const submit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.post('/api/login', { username, password });
-      onLogin(res.data.token);
-      navigate('/');
-    } catch (err) {
-      setMsg("Credenciais inválidas.");
-    }
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Usuário ou senha inválidos');
+        return res.json();
+      })
+      .then(data => {
+        localStorage.setItem('token', data.token);
+        navigate('/');
+      })
+      .catch(err => setError(err.message));
   };
 
   return (
-    <div style={styles.container}>
-      <h2>G.and.w Cinema - Login</h2>
-      <form onSubmit={submit} style={styles.form}>
-        <input placeholder="Usuário" value={username} onChange={e => setUsername(e.target.value)} required />
-        <input placeholder="Senha" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Entrar</button>
-        <p style={{ color: "red" }}>{msg}</p>
-      </form>
-      <p>Não tem cadastro? <Link to="/register">Registrar-se</Link></p>
-    </div>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Paper elevation={6} sx={{ p: 4, minWidth: 320 }}>
+        <Typography variant="h5" align="center" gutterBottom>
+          Entrar
+        </Typography>
+        {error && <Alert severity="error">{error}</Alert>}
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Usuário"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            fullWidth margin="normal" required
+          />
+          <TextField
+            label="Senha"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            fullWidth margin="normal" required
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth sx={{ mt: 2 }}
+          >
+            Entrar
+          </Button>
+        </form>
+        <Box mt={2} textAlign="center">
+          <MuiLink component={Link} to="/forgot-password">
+            Esqueci a senha
+          </MuiLink>
+        </Box>
+        <Box mt={1} textAlign="center">
+          <MuiLink component={Link} to="/register">
+            Não tem uma conta? Cadastre-se
+          </MuiLink>
+        </Box>
+      </Paper>
+    </Box>
   );
 }
-
-const styles = {
-  container: { maxWidth: 400, margin: "70px auto", padding: 20, border: "1px solid #ccc", borderRadius: 10, background: "#f9fafd", textAlign: "center" },
-  form: { display: "flex", flexDirection: "column", gap: 10 }
-};
 
 export default Login;
